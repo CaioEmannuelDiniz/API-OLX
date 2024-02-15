@@ -33,9 +33,11 @@ module.exports = {
       return;
     }
 
+    //gerando novo token
     const payload = (Date.now() + Math.random()).toString();
     const token = await bcrypt.hash(payload, 10);
 
+    //salvando novo token
     user.token = token;
     await user.save();
 
