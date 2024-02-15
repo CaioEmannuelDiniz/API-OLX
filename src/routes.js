@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
 
+const Auth = require("./middlewares/Auth");
+
 const AuthController = require("./controllers/AuthController");
 const UserController = require("./controllers/UserController");
 const AdsController = require("./controllers/AdsController");
@@ -14,14 +16,14 @@ router.get("/states", UserController.getStates);
 router.post("/user/signin", AuthController.signin);
 router.post("/user/signup", AuthController.signup);
 
-router.get("/user/me", UserController.info);
-router.put("/user/me", UserController.editAction);
+router.get("/user/me", Auth.private, UserController.info);
+router.put("/user/me", Auth.private, UserController.editAction);
 
 router.get("/categories", AdsController.getCategories);
 
-router.post("/ad/add", AdsController.addAction);
+router.post("/ad/add", Auth.private, AdsController.addAction);
 router.get("/ad/list", AdsController.getList);
 router.get("/add/item", AdsController.getItem);
-router.post("/ad/:id", AdsController.editAction);
+router.post("/ad/:id", Auth.private, AdsController.editAction);
 
 module.exports = router;
