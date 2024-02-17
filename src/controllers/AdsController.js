@@ -103,6 +103,64 @@ module.exports = {
     res.json({ id: info._id });
   },
   getList: async (req, res) => {
+    let { sort = "asc", offset = 0, limit = 0, q, cat, state } = req.query;
+
+    let filters = { status: true };
+
+    let total = 0;
+
+    if (q) {
+      filters.title = { $regex: q, $options: "i" };
+    }
+
+    if (cat) {
+      const c = await Category.findOne({ slug: cat }).exec();
+
+      if (c) {
+        filters.category = c._id.toString();
+      }
+    }
+
+    if (state) {
+      const s = await StateModel.findOne({ name: state.toUpperCase() }).exec();
+
+      if (s) {
+        filters.state = s._id.toString();
+      }
+    }
+
+    const adsTotal = await Ad.find(filters).exec();
+
+    total = adsTotal.length;
+
+    const adsData = await Ad.find(filters)
+      .sort({ dateCreatead: sort == "desc" ? -1 : 1 })
+      .skip(parseInt(offset))
+      .limit(parseInt(limit))
+      .exec();
+
+    let ads = [];
+    for (let i in adsData) {
+      let image;
+
+      let defaultImg = adsData[i].images.find((e) => e.default);
+
+      if (defaultImg) {
+        image = `${process.env.BASE}/media/${defaultImg.url}`;
+      } else {
+        image = `${process.env.BASE}/media/default.jpg`;
+      }
+
+      ads.push({
+        id: adsData[i]._id,
+        title: adsData[i].title,
+        price: adsData[i].price,
+        priceNegotiable: adsData[i].priceNegotiable,
+        image,
+      });
+    }
+
+    res.json({ ads: ads, total: total });
   },
   getItem: async (req, res) => {},
   editAction: async (req, res) => {},
