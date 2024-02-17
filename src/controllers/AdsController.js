@@ -1,5 +1,6 @@
 const { v4: uuid } = require("uuid");
 const jimp = require("jimp");
+const ObjectId = require("mongoose");
 
 const Category = require("../models/Category");
 const User = require("../models/User");
@@ -162,6 +163,92 @@ module.exports = {
 
     res.json({ ads: ads, total: total });
   },
-  getItem: async (req, res) => {},
+  getItem: async (req, res) => {
+    let { id, other = null } = req.query;
+
+    if (!id) {
+      res.json({ error: "Sem Produto" });
+      return;
+    }
+
+    if (id.length < 12) {
+      res.json({ error: "Id inválido" });
+      return;
+    }
+
+    //validação do id 100%
+    if (!ObjectId.isValidObjectId(id)) {
+      res.json({ error: "Tipo de Id inválido" });
+      return;
+    }
+
+    const ad = await Ad.findById(id);
+    if (!ad) {
+      res.json({ error: "Produto Inexistente" });
+      return;
+    }
+
+    ad.views++;
+    await ad.save();
+
+    let images = [];
+
+    for (let i in ad.images) {
+      images.push(`${process.env.BASE}/media/${ad.images[i].url}`);
+    }
+
+    let category = await Category.findById(ad.category).exec();
+
+    let userInfo = await User.findById(ad.idUser).exec();
+
+    let stateInfo = await StateModel.findById(ad.state).exec();
+
+    let others = [];
+
+    if (others) {
+      const otherData = await Ad.find({
+        status: true,
+        idUser: ad.idUser,
+      }).exec();
+
+      for (let i in otherData) {
+        if (otherData[i]._id.toString() != ad._id.toString()) {
+          let image = `${process.env.BASE}/media/default.jpg`;
+
+          let defaultImg = otherData[i].images.find((e) => e.default);
+
+          if (defaultImg) {
+            image = `${process.env.BASE}/media/${defaultImg.url}`;
+          }
+
+          other.push({
+            id: otherData[i]._id,
+            title: otherData[i].title,
+            price: otherData[i].price,
+            priceNegotiable: otherData[i].priceNegotiable,
+            image,
+          });
+        }
+      }
+    }
+
+    res.json({
+      id: ad._id,
+      title: ad.title,
+      price: ad.price,
+      priceNegotiable: ad.priceNegotiable,
+      description: ad.description,
+      dateCreated: ad.dateCreated,
+      views: ad.views,
+      images,
+      category,
+      userInfo: {
+        name: userInfo.name,
+        email: userInfo.email,
+      },
+      stateName: stateInfo.name,
+      others,
+    });
+  },
   editAction: async (req, res) => {},
 };
