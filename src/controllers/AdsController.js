@@ -79,7 +79,7 @@ module.exports = {
           });
         }
       } else {
-        for (let i = 0; i < req.files.img.lenght; i++) {
+        for (let i = 0; i < req.files.img.length; i++) {
           if (
             ["image/jpeg", "image/jpg", "image/png"].includes(
               req.files.img[i].mimetype
@@ -95,7 +95,7 @@ module.exports = {
       }
     }
 
-    if (newAd.images.lenght > 0) {
+    if (newAd.images.length > 0) {
       newAd.images[0].default = true;
     }
 
@@ -250,5 +250,80 @@ module.exports = {
       others,
     });
   },
-  editAction: async (req, res) => {},
+  editAction: async (req, res) => {
+    let { id } = req.params;
+
+    let { title, status, price, priceneg, desc, cat, images, token } = req.body;
+
+    if (id.length < 12) {
+      res.json({ error: "Id inválido" });
+      return;
+    }
+
+    //validação do id 100%
+    if (!ObjectId.isValidObjectId(id)) {
+      res.json({ error: "Tipo de Id inválido" });
+      return;
+    }
+
+    const ad = await Ad.findById(id).exec();
+
+    if (!ad) {
+      res.json({ error: "Anúncio inexistente" });
+      return;
+    }
+
+    const user = await User.findOne({ token }).exec();
+
+    if (user._id.toString() !== ad.idUser) {
+      res.json({ error: "Este anúncio não é seu" });
+      return;
+    }
+
+    let updates = {};
+
+    if (title) {
+      updates.title = title;
+    }
+
+    if (price) {
+      price = price.replace(".", "").replace(",", ".").replace("R$ ", "");
+
+      price = parseFloat(price);
+      updates.price = price;
+    }
+
+    if (priceneg) {
+      updates.priceNegotiable = priceneg;
+    }
+
+    if (status) {
+      updates.status = status;
+    }
+
+    if (desc) {
+      updates.description = desc;
+    }
+
+    if (cat) {
+      const category = await Category.findOne({ slug: cat }).exec();
+
+      if (!category) {
+        res.json({ error: "categoria inexistente" });
+        return;
+      }
+
+      updates.category = category._id.toString();
+    }
+
+    if (images) {
+      updates.images = images;
+    }
+
+    await Ad.findByIdAndUpdate(id, { $set: updates });
+
+    
+
+    res.json({ message: "Sucesso na alteração" });
+  },
 };
