@@ -1,6 +1,7 @@
 const { v4: uuid } = require("uuid");
 const jimp = require("jimp");
 const ObjectId = require("mongoose");
+const fs = require("fs");
 
 const Category = require("../models/Category");
 const User = require("../models/User");
@@ -280,6 +281,21 @@ module.exports = {
       return;
     }
 
+    //função extra de deletar as imagens antigas da pasta media 
+    console.log(`O anúncio possui ${ad.images.length} arquivos`);
+
+    if (ad.images.length != 0) {
+      console.log("Entrou no modo delete arquivo da pasta media");
+      for (let i = 0; i < ad.images.length; i++) {
+        let imageDelete = ad.images[i].url;
+        console.log(`${imageDelete}`);
+        fs.unlink(`./public/media/${imageDelete}`, function (err) {
+          if (err) throw err;
+          console.log(`Arquivo deletado! ${imageDelete} da pasta media`);
+        });
+      }
+    }
+
     let updates = {};
 
     if (title) {
@@ -320,9 +336,65 @@ module.exports = {
       updates.images = images;
     }
 
-    await Ad.findByIdAndUpdate(id, { $set: updates });
+    //TODO NOVAS IMAGES
+    //verificar se ta recebendo uma ou demais imagens
+    //receber uma ou mais imagens
+    //fazer o upload dela
+    //e depois salvar a imagem no produto
 
-    
+    let newImages = [];
+
+    if (req.files && req.files.img) {
+      //possui apenas uma imagem
+      console.log("possui arquivo para ser enviado");
+      if (req.files.img.length == 0 || req.files.img.length == undefined) {
+        console.log("se possui apenas 1 arquivo ou nenhum entra aqui");
+        if (
+          ["image/jpeg", "image/jpg", "image/png"].includes(
+            req.files.img.mimetype
+          )
+        ) {
+          let url = await addImage(req.files.img.data);
+
+          console.log(`imagem: ${url} ENVIADA`);
+
+          newImages.push({
+            url: url,
+            default: false,
+          });
+          console.log("Modo envio de uma imagem finalizado ");
+        }
+      } else {
+        console.log("se possui mais de 1 arquivo entra aqu");
+        //possui mais de uma imagem
+        for (let i = 0; i < req.files.img.length; i++) {
+          //se a imagem for dos tipos informado
+          if (
+            ["image/jpeg", "image/jpg", "image/png"].includes(
+              req.files.img[i].mimetype
+            )
+          ) {
+            let url = await addImage(req.files.img[i].data);
+
+            console.log(`imagem ${[i]}: ${url} ENVIADA`);
+
+            newImages.push({
+              url: url,
+              default: false,
+            });
+          }
+        }
+        console.log("Modo envio de mais de uma imagem finalizado +1 ");
+      }
+      updates.images = newImages;
+    }
+
+    console.log(newImages.length);
+    if (newImages.length > 0) {
+      updates.images[0].default = true;
+    }
+
+    await Ad.findByIdAndUpdate(id, { $set: updates });
 
     res.json({ message: "Sucesso na alteração" });
   },
