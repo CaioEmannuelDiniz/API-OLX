@@ -44,6 +44,22 @@ module.exports = {
       return;
     }
 
+    if (cat.length < 12) {
+      res.json({ error: "Categoria inválido" });
+      return;
+    }
+
+    if (!ObjectId.isValidObjectId(cat)) {
+      res.json({ error: "Tipo de Id inválido" });
+      return;
+    }
+
+    const category = await Category.findById(cat);
+    if (!category) {
+      res.json({ error: "Categoria inexistente" });
+      return;
+    }
+
     //formater valor
     if (price) {
       price = price.replace(".", "").replace(",", ".").replace("R$ ", "");
@@ -281,7 +297,7 @@ module.exports = {
       return;
     }
 
-    //função extra de deletar as imagens antigas da pasta media 
+    //função extra de deletar as imagens antigas da pasta media
     console.log(`O anúncio possui ${ad.images.length} arquivos`);
 
     if (ad.images.length != 0) {
