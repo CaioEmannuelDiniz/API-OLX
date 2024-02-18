@@ -297,21 +297,6 @@ module.exports = {
       return;
     }
 
-    //função extra de deletar as imagens antigas da pasta media
-    console.log(`O anúncio possui ${ad.images.length} arquivos`);
-
-    if (ad.images.length != 0) {
-      console.log("Entrou no modo delete arquivo da pasta media");
-      for (let i = 0; i < ad.images.length; i++) {
-        let imageDelete = ad.images[i].url;
-        console.log(`${imageDelete}`);
-        fs.unlink(`./public/media/${imageDelete}`, function (err) {
-          if (err) throw err;
-          console.log(`Arquivo deletado! ${imageDelete} da pasta media`);
-        });
-      }
-    }
-
     let updates = {};
 
     if (title) {
@@ -361,6 +346,21 @@ module.exports = {
     let newImages = [];
 
     if (req.files && req.files.img) {
+      //função extra de deletar as imagens antigas da pasta media
+      console.log(`O anúncio possui ${ad.images.length} arquivos`);
+
+      if (ad.images.length != 0) {
+        console.log("Entrou no modo delete arquivo da pasta media");
+        for (let i = 0; i < ad.images.length; i++) {
+          let imageDelete = ad.images[i].url;
+          console.log(`${imageDelete}`);
+          fs.unlink(`./public/media/${imageDelete}`, function (err) {
+            if (err) throw err;
+            console.log(`Arquivo deletado! ${imageDelete} da pasta media`);
+          });
+        }
+      }
+
       //possui apenas uma imagem
       console.log("possui arquivo para ser enviado");
       if (req.files.img.length == 0 || req.files.img.length == undefined) {
